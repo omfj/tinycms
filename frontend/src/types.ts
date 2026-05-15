@@ -136,6 +136,14 @@ export type Draft = {
   data: Record<string, unknown>;
 };
 
+export type ApiToken = {
+  id: string;
+  name: string;
+  expires_at: string | null;
+  last_used_at: string | null;
+  created_at: string;
+};
+
 export type Media = {
   id: string;
   key: string;

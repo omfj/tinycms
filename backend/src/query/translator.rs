@@ -3,9 +3,22 @@ use sqlparser::ast::{
     SelectItem, SetExpr, Value as SqlValue,
 };
 
+use crate::schema::TypeDef;
+
 use super::error::QueryError;
 use super::preprocessor::Param;
 use super::validator::ValidatedQuery;
+
+const DOCUMENT_COLUMNS: &[&str] = &[
+    "id",
+    "type",
+    "slug",
+    "status",
+    "data",
+    "created_at",
+    "updated_at",
+    "published_at",
+];
 
 pub struct Translated {
     pub sql: String,
@@ -15,10 +28,11 @@ pub struct Translated {
 pub fn translate(
     validated: ValidatedQuery,
     mut params: Vec<Param>,
+    types: &[TypeDef],
 ) -> Result<Translated, QueryError> {
     let query = validated.query;
     let next_param = &mut (params.len() + 1);
-    let sql = translate_query(&query, &mut params, next_param)?;
+    let sql = translate_query(&query, &mut params, next_param, types)?;
     Ok(Translated { sql, params })
 }
 
@@ -26,9 +40,10 @@ fn translate_query(
     query: &Query,
     params: &mut Vec<Param>,
     next: &mut usize,
+    types: &[TypeDef],
 ) -> Result<String, QueryError> {
     let body = match &*query.body {
-        SetExpr::Select(s) => translate_select(s, params, next)?,
+        SetExpr::Select(s) => translate_select(s, params, next, types)?,
         _ => unreachable!("validator already rejected non-SELECT"),
     };
 
@@ -69,6 +84,7 @@ fn translate_select(
     select: &sqlparser::ast::Select,
     params: &mut Vec<Param>,
     next: &mut usize,
+    types: &[TypeDef],
 ) -> Result<String, QueryError> {
     let projection: Result<Vec<_>, _> = select
         .projection
@@ -97,12 +113,12 @@ fn translate_select(
         .from
         .iter()
         .map(|t| {
-            let table = translate_table_factor(&t.relation)?;
+            let table = translate_table_factor(&t.relation, types)?;
             let joins: Result<Vec<_>, _> = t
                 .joins
                 .iter()
                 .map(|j| {
-                    let join_table = translate_table_factor(&j.relation)?;
+                    let join_table = translate_table_factor(&j.relation, types)?;
                     match &j.join_operator {
                         sqlparser::ast::JoinOperator::Inner(c) => Ok(format!(
                             "JOIN {join_table}{}",
@@ -168,10 +184,47 @@ fn emit_numeric_expr(expr: &Expr) -> Result<String, QueryError> {
     }
 }
 
-fn translate_table_factor(factor: &sqlparser::ast::TableFactor) -> Result<String, QueryError> {
+fn translate_table_factor(
+    factor: &sqlparser::ast::TableFactor,
+    types: &[TypeDef],
+) -> Result<String, QueryError> {
     match factor {
         sqlparser::ast::TableFactor::Table { name, alias, .. } => {
             let table = name.to_string();
+            let table_lower = table.to_lowercase();
+
+            if let Some(type_def) = types.iter().find(|t| t.name.to_lowercase() == table_lower) {
+                let alias_name = alias
+                    .as_ref()
+                    .map(|a| a.name.to_string())
+                    .unwrap_or_else(|| table.clone());
+
+                let mut cols: Vec<String> = DOCUMENT_COLUMNS
+                    .iter()
+                    .map(|c| {
+                        if *c == "type" {
+                            "\"type\"".to_string()
+                        } else {
+                            c.to_string()
+                        }
+                    })
+                    .collect();
+
+                for field in &type_def.fields {
+                    let field_name = &field.base().name;
+                    if !DOCUMENT_COLUMNS.contains(&field_name.to_lowercase().as_str()) {
+                        cols.push(format!("data->>'{}' AS \"{}\"", field_name, field_name));
+                    }
+                }
+
+                return Ok(format!(
+                    "(SELECT {} FROM documents WHERE \"type\" = '{}') AS {}",
+                    cols.join(", "),
+                    table_lower,
+                    alias_name
+                ));
+            }
+
             if let Some(alias) = alias {
                 Ok(format!("{table} AS {}", alias.name))
             } else {
@@ -418,8 +471,16 @@ mod tests {
 
     fn run(sql: &str) -> Result<Translated, QueryError> {
         let q = parser::parse(sql)?;
-        let v = validator::validate(q, &UserRole::Admin)?;
-        translate(v, vec![])
+        let v = validator::validate(q, &UserRole::Admin, &[])?;
+        translate(v, vec![], &[])
+    }
+
+    // helper that simulates a schema with a single type
+    fn run_with_types(sql: &str, types: &[TypeDef]) -> Result<Translated, QueryError> {
+        let type_names: Vec<&str> = types.iter().map(|t| t.name.as_str()).collect();
+        let q = parser::parse(sql)?;
+        let v = validator::validate(q, &UserRole::Admin, &type_names)?;
+        translate(v, vec![], types)
     }
 
     #[test]

@@ -11,10 +11,11 @@ if (!token) {
 async function main() {
   const client = new TinyCmsClient({
     baseUrl: "http://localhost:3000",
+    token,
   });
 
   const posts = await client.query(
-    "SELECT id, title, content FROM posts ORDER BY created_at DESC",
+    "SELECT id, title, slug, body, author FROM post ORDER BY created_at DESC",
   );
 
   console.log("Posts:", posts);

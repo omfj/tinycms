@@ -29,7 +29,6 @@ export class TinyCmsClient {
         "Content-Type": "application/json",
         Authorization: "Bearer " + this.token,
       },
-      credentials: "include",
       body: JSON.stringify({ q: sql, params: options.params }),
     });
 

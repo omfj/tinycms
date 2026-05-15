@@ -28,9 +28,12 @@ async fn handle_query(
 
     let ast = parser::parse(&preprocessed.sql).map_err(Error::from)?;
 
-    let validated = validator::validate(ast, &user.role).map_err(Error::from)?;
+    let type_names: Vec<&str> = state.schema.types.iter().map(|t| t.name.as_str()).collect();
 
-    let translated = translator::translate(validated, preprocessed.params).map_err(Error::from)?;
+    let validated = validator::validate(ast, &user.role, &type_names).map_err(Error::from)?;
+
+    let translated = translator::translate(validated, preprocessed.params, &state.schema.types)
+        .map_err(Error::from)?;
 
     let rows = executor::execute(&state.pool, translated)
         .await

@@ -1,6 +1,5 @@
 Now:
 
-- API Tokens
 - Webhooks for on_create, on_update, on_delete, on_publish, on_unpublish (more?)
 - Server-side validation
 - Audit logs

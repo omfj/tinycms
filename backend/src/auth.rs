@@ -9,6 +9,12 @@ use crate::{
     state::SharedState,
 };
 
+pub fn hash_token(token: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let result = Sha256::digest(token.as_bytes());
+    result.iter().map(|b| format!("{b:02x}")).collect()
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct AuthUser {
     pub id: Uuid,
@@ -69,34 +75,88 @@ impl FromRequestParts<SharedState> for AuthUser {
         parts: &mut Parts,
         state: &SharedState,
     ) -> Result<Self, Self::Rejection> {
-        let token = extract_cookie(&parts.headers, "session").ok_or(Error::Unauthorized)?;
-
-        let row = sqlx::query_as!(
-            SessionRow,
-            r#"SELECT u.id, u.email, u.name,
-                      u.role AS "role: UserRole",
-                      u.status AS "status: UserStatus"
-               FROM sessions s
-               JOIN users u ON u.id = s.user_id
-               WHERE s.token = $1 AND s.expires_at > now()"#,
-            token
-        )
-        .fetch_optional(&state.pool)
-        .await
-        .map_err(|e| Error::Internal(e.into()))?
-        .ok_or(Error::Unauthorized)?;
-
-        if row.status != UserStatus::Active {
-            return Err(Error::Unauthorized);
+        // Try session cookie first
+        if let Some(token) = extract_cookie(&parts.headers, "session")
+            && let Some(row) = sqlx::query_as!(
+                SessionRow,
+                r#"SELECT u.id, u.email, u.name,
+                          u.role AS "role: UserRole",
+                          u.status AS "status: UserStatus"
+                   FROM sessions s
+                   JOIN users u ON u.id = s.user_id
+                   WHERE s.token = $1 AND s.expires_at > now()"#,
+                token
+            )
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| Error::Internal(e.into()))?
+            && row.status == UserStatus::Active
+        {
+            return Ok(AuthUser {
+                id: row.id,
+                email: row.email,
+                name: row.name,
+                role: row.role,
+                status: row.status,
+            });
         }
 
-        Ok(AuthUser {
-            id: row.id,
-            email: row.email,
-            name: row.name,
-            role: row.role,
-            status: row.status,
-        })
+        // Try Bearer token
+        if let Some(auth_header) = parts.headers.get("authorization")
+            && let Ok(auth_str) = auth_header.to_str()
+            && let Some(raw_token) = auth_str.strip_prefix("Bearer ")
+        {
+            let raw_token = raw_token.trim();
+            let token_hash = hash_token(raw_token);
+
+            #[derive(sqlx::FromRow)]
+            struct ApiTokenRow {
+                token_id: Uuid,
+                id: Uuid,
+                email: String,
+                name: Option<String>,
+                role: UserRole,
+                status: UserStatus,
+            }
+
+            let row = sqlx::query_as!(
+                ApiTokenRow,
+                r#"SELECT t.id AS token_id, u.id, u.email, u.name,
+                                  u.role AS "role: UserRole",
+                                  u.status AS "status: UserStatus"
+                           FROM api_tokens t
+                           JOIN users u ON u.id = t.user_id
+                           WHERE t.token_hash = $1
+                             AND (t.expires_at IS NULL OR t.expires_at > now())"#,
+                token_hash
+            )
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| Error::Internal(e.into()))?;
+
+            match row {
+                None => {}
+                Some(row) if row.status != UserStatus::Active => {}
+                Some(row) => {
+                    let _ = sqlx::query!(
+                        "UPDATE api_tokens SET last_used_at = now() WHERE id = $1",
+                        row.token_id
+                    )
+                    .execute(&state.pool)
+                    .await;
+
+                    return Ok(AuthUser {
+                        id: row.id,
+                        email: row.email,
+                        name: row.name,
+                        role: row.role,
+                        status: row.status,
+                    });
+                }
+            }
+        }
+
+        Err(Error::Unauthorized)
     }
 }
 

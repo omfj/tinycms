@@ -9,6 +9,7 @@ mod documents;
 mod health;
 mod query;
 mod schema;
+mod tokens;
 mod uploads;
 mod users;
 mod workspace;
@@ -21,6 +22,7 @@ pub fn api_router(state: SharedState) -> Router {
         .nest("/workspace", workspace::router())
         .nest("/uploads", uploads::router())
         .nest("/query", query::router())
+        .nest("/tokens", tokens::router())
         .route("/workspace/setup", get(workspace::setup_status))
         .route("/health", get(health::health))
         .route("/schema", get(schema::get))

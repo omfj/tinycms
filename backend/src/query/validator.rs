@@ -13,6 +13,7 @@ const DENIED_TABLES: &[&str] = &[
     "users",
     "workspace_settings",
     "document_revisions",
+    "api_tokens",
 ];
 
 const ALLOWED_TABLES_ALL: &[&str] = &["documents"];
@@ -40,7 +41,11 @@ pub struct ValidatedQuery {
     pub query: Box<Query>,
 }
 
-pub fn validate(mut query: Box<Query>, role: &UserRole) -> Result<ValidatedQuery, QueryError> {
+pub fn validate(
+    mut query: Box<Query>,
+    role: &UserRole,
+    type_names: &[&str],
+) -> Result<ValidatedQuery, QueryError> {
     let allowed_tables = match role {
         UserRole::Admin => ALLOWED_TABLES_ADMIN,
         UserRole::Editor => ALLOWED_TABLES_EDITOR,
@@ -62,7 +67,7 @@ pub fn validate(mut query: Box<Query>, role: &UserRole) -> Result<ValidatedQuery
         _ => unreachable!(),
     };
 
-    validate_from(select, allowed_tables)?;
+    validate_from(select, allowed_tables, type_names)?;
     validate_select_items(select)?;
 
     if let Some(ref expr) = select.selection {
@@ -74,17 +79,25 @@ pub fn validate(mut query: Box<Query>, role: &UserRole) -> Result<ValidatedQuery
     Ok(ValidatedQuery { query })
 }
 
-fn validate_from(select: &Select, allowed_tables: &[&str]) -> Result<(), QueryError> {
+fn validate_from(
+    select: &Select,
+    allowed_tables: &[&str],
+    type_names: &[&str],
+) -> Result<(), QueryError> {
     for table_with_joins in &select.from {
-        validate_table_factor(&table_with_joins.relation, allowed_tables)?;
+        validate_table_factor(&table_with_joins.relation, allowed_tables, type_names)?;
         for join in &table_with_joins.joins {
-            validate_table_factor(&join.relation, allowed_tables)?;
+            validate_table_factor(&join.relation, allowed_tables, type_names)?;
         }
     }
     Ok(())
 }
 
-fn validate_table_factor(factor: &TableFactor, allowed_tables: &[&str]) -> Result<(), QueryError> {
+fn validate_table_factor(
+    factor: &TableFactor,
+    allowed_tables: &[&str],
+    type_names: &[&str],
+) -> Result<(), QueryError> {
     match factor {
         TableFactor::Table { name, .. } => {
             let table = name
@@ -98,12 +111,12 @@ fn validate_table_factor(factor: &TableFactor, allowed_tables: &[&str]) -> Resul
                     "table '{table}' is not accessible"
                 )));
             }
-            if !allowed_tables.contains(&table.as_str()) {
-                return Err(QueryError::Forbidden(format!(
-                    "table '{table}' is not accessible with your role"
-                )));
+            if allowed_tables.contains(&table.as_str()) || type_names.contains(&table.as_str()) {
+                return Ok(());
             }
-            Ok(())
+            Err(QueryError::Forbidden(format!(
+                "table '{table}' is not accessible with your role"
+            )))
         }
         TableFactor::Derived { .. } => Err(QueryError::Forbidden(
             "subqueries in FROM are not allowed".into(),
