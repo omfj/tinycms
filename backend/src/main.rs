@@ -7,6 +7,7 @@ mod config;
 mod db;
 mod error;
 mod models;
+mod query;
 mod routes;
 mod schema;
 mod state;
