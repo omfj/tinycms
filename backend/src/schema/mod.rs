@@ -4,7 +4,7 @@ mod field;
 use anyhow::Context;
 
 pub use config::{AuthConfig, DatabaseConfig, ProviderConfig, StorageConfig, TinyCmsConfig};
-pub use field::{FieldDef, TypeDef};
+pub use field::{FieldDef, FieldError, TypeDef};
 
 /// JS runtimes tried in order. First one found in PATH wins.
 ///

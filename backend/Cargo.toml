@@ -33,3 +33,4 @@ uuid = { version = "1", features = ["v4", "serde"] }
 argon2 = { version = "0.5", features = ["std"] }
 rand = "0.8"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+regex = "1"

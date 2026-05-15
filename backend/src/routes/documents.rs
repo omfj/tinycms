@@ -10,8 +10,21 @@ use uuid::Uuid;
 use crate::{
     error::{Error, Result},
     models::document::{CreateDocument, Document, DocumentRevision, UpdateDocument},
+    schema::TinyCmsConfig,
     state::SharedState,
 };
+
+fn validate_doc(schema: &TinyCmsConfig, doc_type: &str, data: &serde_json::Value) -> Result<()> {
+    let Some(typedef) = schema.types.iter().find(|t| t.name == doc_type) else {
+        return Ok(());
+    };
+    let errors = typedef.validate(data);
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(Error::Validation(errors))
+    }
+}
 
 pub fn router() -> Router<SharedState> {
     Router::new()
@@ -75,6 +88,9 @@ async fn create(
     State(state): State<SharedState>,
     Json(body): Json<CreateDocument>,
 ) -> Result<Json<Document>> {
+    let data = body.data.unwrap_or_else(|| json!({}));
+    validate_doc(&state.schema, &body.doc_type, &data)?;
+
     let doc = sqlx::query_as!(
         Document,
         r#"INSERT INTO documents (type, slug, status, data)
@@ -84,7 +100,7 @@ async fn create(
         body.doc_type,
         body.slug,
         body.status.as_deref().unwrap_or("draft"),
-        body.data.unwrap_or_else(|| json!({})),
+        data,
     )
     .fetch_one(&state.pool)
     .await?;
@@ -97,6 +113,14 @@ async fn update(
     Path(id): Path<Uuid>,
     Json(body): Json<UpdateDocument>,
 ) -> Result<Json<Document>> {
+    if let Some(data) = &body.data {
+        let row = sqlx::query!("SELECT type FROM documents WHERE id = $1", id)
+            .fetch_optional(&state.pool)
+            .await?
+            .ok_or(Error::NotFound)?;
+        validate_doc(&state.schema, &row.r#type, data)?;
+    }
+
     let doc = sqlx::query_as!(
         Document,
         r#"UPDATE documents SET

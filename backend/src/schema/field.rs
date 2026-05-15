@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct TypeDef {
@@ -158,5 +159,186 @@ impl FieldDef {
             Self::Reference(_) => "reference",
             Self::Array(_) => "array",
         }
+    }
+
+    fn validate_value(&self, value: Option<&Value>) -> Vec<FieldError> {
+        let base = self.base();
+        let name = &base.name;
+        let label = base.title.as_deref().unwrap_or(name);
+        let mut errors = Vec::new();
+
+        let is_empty = matches!(value, None | Some(Value::Null))
+            || matches!(value, Some(Value::String(s)) if s.is_empty())
+            || matches!(value, Some(Value::Array(a)) if a.is_empty());
+
+        if base.required && is_empty {
+            errors.push(FieldError {
+                field: name.clone(),
+                message: format!("{label} is required"),
+            });
+            return errors;
+        }
+
+        if is_empty {
+            return errors;
+        }
+
+        let val = value.unwrap();
+
+        match self {
+            FieldDef::String(f) => {
+                let Some(s) = val.as_str() else {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!("{label} must be a string"),
+                    });
+                    return errors;
+                };
+                if let Some(pattern) = &f.pattern {
+                    match regex::Regex::new(pattern) {
+                        Ok(re) if !re.is_match(s) => errors.push(FieldError {
+                            field: name.clone(),
+                            message: format!("{label} does not match the required pattern"),
+                        }),
+                        Err(_) => {
+                            tracing::warn!("invalid regex pattern for field {name}: {pattern}")
+                        }
+                        _ => {}
+                    }
+                }
+                if let Some(options) = &f.options
+                    && !options.iter().any(|o| o.value == *val)
+                {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!("{label} must be one of the allowed values"),
+                    });
+                }
+            }
+            FieldDef::Number(f) => {
+                let Some(n) = val.as_f64() else {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!("{label} must be a number"),
+                    });
+                    return errors;
+                };
+                if let Some(min) = f.min
+                    && n < min
+                {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!("{label} must be at least {min}"),
+                    });
+                }
+                if let Some(max) = f.max
+                    && n > max
+                {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!("{label} must be at most {max}"),
+                    });
+                }
+                if let Some(options) = &f.options
+                    && !options.iter().any(|o| o.value == *val)
+                {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!("{label} must be one of the allowed values"),
+                    });
+                }
+            }
+            FieldDef::Boolean(_) if !val.is_boolean() => {
+                errors.push(FieldError {
+                    field: name.clone(),
+                    message: format!("{label} must be a boolean"),
+                });
+            }
+            FieldDef::Date(f) => {
+                let n = val
+                    .as_f64()
+                    .or_else(|| val.as_str().and_then(|s| s.parse().ok()));
+                match n {
+                    Some(n) => {
+                        if let Some(min) = f.min
+                            && n < min
+                        {
+                            errors.push(FieldError {
+                                field: name.clone(),
+                                message: format!("{label} is before the minimum allowed date"),
+                            });
+                        }
+                        if let Some(max) = f.max
+                            && n > max
+                        {
+                            errors.push(FieldError {
+                                field: name.clone(),
+                                message: format!("{label} is after the maximum allowed date"),
+                            });
+                        }
+                    }
+                    None if !val.is_string() => {
+                        errors.push(FieldError {
+                            field: name.clone(),
+                            message: format!("{label} must be a date"),
+                        });
+                    }
+                    _ => {}
+                }
+            }
+            FieldDef::Url(_) => {
+                let Some(s) = val.as_str() else {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!("{label} must be a string"),
+                    });
+                    return errors;
+                };
+                if !s.starts_with("http://") && !s.starts_with("https://") {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!("{label} must be a valid URL"),
+                    });
+                }
+            }
+            FieldDef::Slug(_) => {
+                let Some(s) = val.as_str() else {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!("{label} must be a string"),
+                    });
+                    return errors;
+                };
+                let re = regex::Regex::new(r"^[a-z0-9]+(?:-[a-z0-9]+)*$").unwrap();
+                if !re.is_match(s) {
+                    errors.push(FieldError {
+                        field: name.clone(),
+                        message: format!(
+                            "{label} must contain only lowercase letters, numbers, and hyphens"
+                        ),
+                    });
+                }
+            }
+            // Text, Richtext, Image, Reference, Array: required already handled above
+            _ => {}
+        }
+
+        errors
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct FieldError {
+    pub field: String,
+    pub message: String,
+}
+
+impl TypeDef {
+    pub fn validate(&self, data: &Value) -> Vec<FieldError> {
+        self.fields
+            .iter()
+            .filter(|f| !f.base().hidden && !f.base().read_only)
+            .flat_map(|f| f.validate_value(data.get(&f.base().name)))
+            .collect()
     }
 }
