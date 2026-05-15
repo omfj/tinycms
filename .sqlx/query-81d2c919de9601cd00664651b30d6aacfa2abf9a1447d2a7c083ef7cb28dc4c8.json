@@ -1,0 +1,68 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, key, url, filename, content_type, size, label, uploaded_by, created_at\n         FROM media\n         ORDER BY created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "filename",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "content_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "size",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "uploaded_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "81d2c919de9601cd00664651b30d6aacfa2abf9a1447d2a7c083ef7cb28dc4c8"
+}

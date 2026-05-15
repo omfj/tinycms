@@ -1,0 +1,9 @@
+# Rust
+target/
+
+# Frontend
+node_modules/
+frontend/dist/
+
+# Env
+.env

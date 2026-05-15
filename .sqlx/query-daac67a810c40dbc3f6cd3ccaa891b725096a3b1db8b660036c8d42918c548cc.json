@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE media SET label = $2\n         WHERE id = $1\n         RETURNING id, key, url, filename, content_type, size, label, uploaded_by, created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "filename",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "content_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "size",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "uploaded_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "daac67a810c40dbc3f6cd3ccaa891b725096a3b1db8b660036c8d42918c548cc"
+}

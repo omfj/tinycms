@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.id, u.email, u.name,\n                      u.role AS \"role: UserRole\",\n                      u.status AS \"status: UserStatus\"\n               FROM sessions s\n               JOIN users u ON u.id = s.user_id\n               WHERE s.token = $1 AND s.expires_at > now()",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "role: UserRole",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "status: UserStatus",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "4b2b9db8f9908f65b3e87a8fcd5ecd9b004e70d6c62090a658b355a5d2bdea72"
+}

@@ -1,0 +1,7 @@
+packages:
+  - frontend
+  - packages/*
+  - examples/*
+
+allowBuilds:
+  esbuild: true

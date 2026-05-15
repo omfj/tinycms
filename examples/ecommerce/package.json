@@ -1,0 +1,13 @@
+{
+  "name": "tinycms-example-ecommerce",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "tinycms": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.12.4"
+  }
+}

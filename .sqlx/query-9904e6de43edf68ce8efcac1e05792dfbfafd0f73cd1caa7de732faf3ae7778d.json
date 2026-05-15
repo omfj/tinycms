@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO users (email, name, status, role)\n           VALUES ($1, $2, $3, $4)\n           ON CONFLICT (email) DO UPDATE SET name = COALESCE(EXCLUDED.name, users.name)\n           RETURNING id, status AS \"status: UserStatus\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "status: UserStatus",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "9904e6de43edf68ce8efcac1e05792dfbfafd0f73cd1caa7de732faf3ae7778d"
+}

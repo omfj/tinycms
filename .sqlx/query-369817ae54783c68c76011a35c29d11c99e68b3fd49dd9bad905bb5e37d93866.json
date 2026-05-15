@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.id, u.status AS \"status: UserStatus\", a.access_token\n           FROM accounts a\n           JOIN users u ON u.id = a.user_id\n           WHERE a.provider = 'credentials' AND a.provider_account_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "status: UserStatus",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "access_token",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "369817ae54783c68c76011a35c29d11c99e68b3fd49dd9bad905bb5e37d93866"
+}
