@@ -15,7 +15,12 @@ async function main() {
   });
 
   const posts = await client.query(
-    "SELECT id, title, slug, body, author FROM post ORDER BY created_at DESC",
+    `SELECT
+      p.id, p.title, p.slug,
+      p.body, a.name as author_name
+    FROM post p
+    LEFT JOIN author a ON p.author::uuid = a.id
+    ORDER BY p.created_at DESC`,
   );
 
   console.log("Posts:", posts);

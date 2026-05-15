@@ -124,7 +124,8 @@ fn translate_select(
                             "JOIN {join_table}{}",
                             format_join_constraint(c, params, next)?
                         )),
-                        sqlparser::ast::JoinOperator::LeftOuter(c) => Ok(format!(
+                        sqlparser::ast::JoinOperator::Left(c)
+                        | sqlparser::ast::JoinOperator::LeftOuter(c) => Ok(format!(
                             "LEFT JOIN {join_table}{}",
                             format_join_constraint(c, params, next)?
                         )),
