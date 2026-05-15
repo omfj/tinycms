@@ -1,0 +1,11 @@
+Now:
+
+- API Tokens
+- Webhooks for on_create, on_update, on_delete, on_publish, on_unpublish (more?)
+- Server-side validation
+- Audit logs
+
+Furhter down the line:
+
+- Full text search
+- SQL-like query language
