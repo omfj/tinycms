@@ -110,7 +110,6 @@ pub async fn register(
     let user_id: uuid::Uuid = sqlx::query_scalar!(
         "INSERT INTO users (email, name, status, role)
          VALUES ($1, $2, $3, $4)
-         ON CONFLICT (email) DO UPDATE SET name = COALESCE(EXCLUDED.name, users.name)
          RETURNING id",
         body.email,
         body.name,
@@ -118,12 +117,17 @@ pub async fn register(
         role as UserRole,
     )
     .fetch_one(&state.pool)
-    .await?;
+    .await
+    .map_err(|e| match e {
+        sqlx::Error::Database(ref db) if db.constraint() == Some("users_email_key") => {
+            Error::BadRequest("email already in use".into())
+        }
+        other => Error::from(other),
+    })?;
 
     sqlx::query!(
         "INSERT INTO accounts (user_id, provider, provider_account_id, access_token)
-         VALUES ($1, 'credentials', $2, $3)
-         ON CONFLICT (provider, provider_account_id) DO UPDATE SET access_token = EXCLUDED.access_token",
+         VALUES ($1, 'credentials', $2, $3)",
         user_id,
         body.email,
         hash,
