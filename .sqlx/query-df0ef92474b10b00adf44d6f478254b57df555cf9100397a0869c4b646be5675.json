@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT u.id, u.email, u.name,\n                      u.role AS \"role: UserRole\",\n                      u.status AS \"status: UserStatus\"\n               FROM sessions s\n               JOIN users u ON u.id = s.user_id\n               WHERE s.token = $1 AND s.expires_at > now()",
+  "query": "SELECT u.id, u.email, u.name,\n                          u.role AS \"role: UserRole\",\n                          u.status AS \"status: UserStatus\"\n                   FROM sessions s\n                   JOIN users u ON u.id = s.user_id\n                   WHERE s.token = $1 AND s.expires_at > now()",
   "describe": {
     "columns": [
       {
@@ -42,5 +42,5 @@
       false
     ]
   },
-  "hash": "4b2b9db8f9908f65b3e87a8fcd5ecd9b004e70d6c62090a658b355a5d2bdea72"
+  "hash": "df0ef92474b10b00adf44d6f478254b57df555cf9100397a0869c4b646be5675"
 }

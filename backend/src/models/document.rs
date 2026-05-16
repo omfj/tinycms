@@ -9,7 +9,6 @@ pub struct Document {
     #[sqlx(rename = "type")]
     #[serde(rename = "type")]
     pub doc_type: String,
-    pub slug: Option<String>,
     pub status: String,
     pub data: Value,
     pub created_at: DateTime<Utc>,
@@ -21,14 +20,12 @@ pub struct Document {
 pub struct CreateDocument {
     #[serde(rename = "type")]
     pub doc_type: String,
-    pub slug: Option<String>,
     pub status: Option<String>,
     pub data: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateDocument {
-    pub slug: Option<String>,
     pub status: Option<String>,
     pub data: Option<Value>,
 }

@@ -2,21 +2,15 @@ import type { Document, Draft, Field, TypeDef } from "../types";
 
 export function newDraft(type: TypeDef): Draft {
   return {
-    slug: "",
     status: "draft",
     data: Object.fromEntries(type.fields.map((field) => [field.name, initialValue(field)])),
   };
 }
 
-export function draftFromDocument(doc: Document, type?: TypeDef): Draft {
-  const data = { ...doc.data };
-  const slugField = type?.fields.find((field) => field.type === "slug");
-  if (slugField && doc.slug) data[slugField.name] = doc.slug;
-
+export function draftFromDocument(doc: Document): Draft {
   return {
-    slug: doc.slug ?? "",
     status: doc.status as Draft["status"],
-    data,
+    data: { ...doc.data },
   };
 }
 
@@ -26,7 +20,7 @@ export function titleFor(doc: Document, type?: TypeDef) {
     type?.fields.find((field) => field.type === "string");
   const value = titleField ? doc.data[titleField.name] : undefined;
   if (typeof value === "string" && value.trim()) return value;
-  return doc.slug || "Untitled";
+  return "Untitled";
 }
 
 function initialValue(field: Field): unknown {

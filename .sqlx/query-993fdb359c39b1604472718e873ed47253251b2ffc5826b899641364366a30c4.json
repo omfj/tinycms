@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, type AS doc_type, slug, status, data AS \"data: Value\",\n                  created_at, updated_at, published_at\n           FROM documents\n           WHERE ($1::text IS NULL OR type = $1)\n             AND ($2::text IS NULL OR status = $2)\n           ORDER BY created_at DESC\n           LIMIT $3 OFFSET $4",
+  "query": "UPDATE documents SET\n             status       = COALESCE($2, status),\n             data         = COALESCE($3, data),\n             updated_at   = now(),\n             published_at = CASE\n               WHEN $2 = 'published' AND published_at IS NULL THEN now()\n               ELSE published_at\n             END\n           WHERE id = $1\n           RETURNING id, type AS doc_type, status, data AS \"data: Value\",\n                     created_at, updated_at, published_at",
   "describe": {
     "columns": [
       {
@@ -15,47 +15,40 @@
       },
       {
         "ordinal": 2,
-        "name": "slug",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 3,
         "name": "status",
         "type_info": "Text"
       },
       {
-        "ordinal": 4,
+        "ordinal": 3,
         "name": "data: Value",
         "type_info": "Jsonb"
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "updated_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 7,
+        "ordinal": 6,
         "name": "published_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Text",
-        "Text",
-        "Int8",
-        "Int8"
+        "Jsonb"
       ]
     },
     "nullable": [
       false,
       false,
-      true,
       false,
       false,
       false,
@@ -63,5 +56,5 @@
       true
     ]
   },
-  "hash": "9a3cb7636080b9075ca2bf9018e766a4c1964f6e3d72120853b2258aa396be0f"
+  "hash": "993fdb359c39b1604472718e873ed47253251b2ffc5826b899641364366a30c4"
 }

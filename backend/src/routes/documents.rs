@@ -51,7 +51,7 @@ async fn list(
 
     let docs = sqlx::query_as!(
         Document,
-        r#"SELECT id, type AS doc_type, slug, status, data AS "data: Value",
+        r#"SELECT id, type AS doc_type, status, data AS "data: Value",
                   created_at, updated_at, published_at
            FROM documents
            WHERE ($1::text IS NULL OR type = $1)
@@ -72,7 +72,7 @@ async fn list(
 async fn get_one(State(state): State<SharedState>, Path(id): Path<Uuid>) -> Result<Json<Document>> {
     let doc = sqlx::query_as!(
         Document,
-        r#"SELECT id, type AS doc_type, slug, status, data AS "data: Value",
+        r#"SELECT id, type AS doc_type, status, data AS "data: Value",
                   created_at, updated_at, published_at
            FROM documents WHERE id = $1"#,
         id,
@@ -93,12 +93,11 @@ async fn create(
 
     let doc = sqlx::query_as!(
         Document,
-        r#"INSERT INTO documents (type, slug, status, data)
-           VALUES ($1, $2, $3, $4)
-           RETURNING id, type AS doc_type, slug, status, data AS "data: Value",
+        r#"INSERT INTO documents (type, status, data)
+           VALUES ($1, $2, $3)
+           RETURNING id, type AS doc_type, status, data AS "data: Value",
                      created_at, updated_at, published_at"#,
         body.doc_type,
-        body.slug,
         body.status.as_deref().unwrap_or("draft"),
         data,
     )
@@ -124,19 +123,17 @@ async fn update(
     let doc = sqlx::query_as!(
         Document,
         r#"UPDATE documents SET
-             slug         = COALESCE($2, slug),
-             status       = COALESCE($3, status),
-             data         = COALESCE($4, data),
+             status       = COALESCE($2, status),
+             data         = COALESCE($3, data),
              updated_at   = now(),
              published_at = CASE
-               WHEN $3 = 'published' AND published_at IS NULL THEN now()
+               WHEN $2 = 'published' AND published_at IS NULL THEN now()
                ELSE published_at
              END
            WHERE id = $1
-           RETURNING id, type AS doc_type, slug, status, data AS "data: Value",
+           RETURNING id, type AS doc_type, status, data AS "data: Value",
                      created_at, updated_at, published_at"#,
         id,
-        body.slug,
         body.status,
         body.data,
     )

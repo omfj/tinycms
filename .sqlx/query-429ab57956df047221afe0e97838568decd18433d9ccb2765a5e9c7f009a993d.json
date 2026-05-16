@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO documents (type, slug, status, data)\n           VALUES ($1, $2, $3, $4)\n           RETURNING id, type AS doc_type, slug, status, data AS \"data: Value\",\n                     created_at, updated_at, published_at",
+  "query": "SELECT id, type AS doc_type, status, data AS \"data: Value\",\n                  created_at, updated_at, published_at\n           FROM documents WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -15,47 +15,38 @@
       },
       {
         "ordinal": 2,
-        "name": "slug",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 3,
         "name": "status",
         "type_info": "Text"
       },
       {
-        "ordinal": 4,
+        "ordinal": 3,
         "name": "data: Value",
         "type_info": "Jsonb"
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "updated_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 7,
+        "ordinal": 6,
         "name": "published_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Text",
-        "Text",
-        "Jsonb"
+        "Uuid"
       ]
     },
     "nullable": [
       false,
       false,
-      true,
       false,
       false,
       false,
@@ -63,5 +54,5 @@
       true
     ]
   },
-  "hash": "77dd66edc1d2c7accbb8218589671cd5ca91ae0fcce1ff817aec33a861ca6e20"
+  "hash": "429ab57956df047221afe0e97838568decd18433d9ccb2765a5e9c7f009a993d"
 }

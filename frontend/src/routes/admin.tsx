@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { FieldEditor } from "../components/field-editor";
 import { FieldShell } from "../components/field-shell";
 import { CollapsedRail, SidebarHeader } from "../components/sidebar";
-import { SlugInput } from "../components/slug-input";
 import { StatusPill } from "../components/status-pill";
 import { inputClass } from "../components/ui";
 import { api } from "../lib/api";
@@ -106,7 +105,7 @@ export function AdminPage() {
 
         setDocuments(visibleDocs);
         setSelectedId(nextDocument?.id ?? null);
-        setDraft(nextDocument ? draftFromDocument(nextDocument, typeDef) : newDraft(typeDef));
+        setDraft(nextDocument ? draftFromDocument(nextDocument) : newDraft(typeDef));
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Could not load documents");
         setSelectedId(null);
@@ -127,7 +126,6 @@ export function AdminPage() {
   }, [draft?.data]);
 
   const selectedDocument = documents.find((doc) => doc.id === selectedId) ?? null;
-  const slugField = selectedDef?.fields.find((field) => field.type === "slug");
   const gridClass = typesCollapsed
     ? docsCollapsed
       ? "grid-cols-[3.5rem_3.5rem_minmax(0,1fr)]"
@@ -138,7 +136,7 @@ export function AdminPage() {
 
   function selectDocument(doc: Document) {
     setSelectedId(doc.id);
-    setDraft(draftFromDocument(doc, selectedDef));
+    setDraft(draftFromDocument(doc));
   }
 
   function navigateTo(event: MouseEvent, type: string, id?: string | null) {
@@ -161,24 +159,19 @@ export function AdminPage() {
       if (!current) return current;
 
       const nextData = { ...current.data, [field.name]: value };
-      const slugSource = selectedDef?.fields.find((item) => item.type === "slug")?.source;
-      const nextSlug =
-        field.type === "slug"
-          ? String(value)
-          : field.name === slugSource && !current.slug
-            ? slugify(String(value))
-            : current.slug;
+      const slugFieldDef = selectedDef?.fields.find((item) => item.type === "slug");
+      if (slugFieldDef && field.name === slugFieldDef.source && !current.data[slugFieldDef.name]) {
+        nextData[slugFieldDef.name] = slugify(String(value));
+      }
 
-      if (field.type === "slug") nextData[field.name] = nextSlug;
-
-      return { ...current, slug: nextSlug, data: nextData };
+      return { ...current, data: nextData };
     });
   }
 
   function generateSlug(field?: SlugField) {
-    if (!draft) return;
+    if (!draft || !field) return;
 
-    const sourceName = field?.source;
+    const sourceName = field.source;
     const sourceValue =
       sourceName && typeof draft.data[sourceName] === "string"
         ? draft.data[sourceName]
@@ -186,8 +179,8 @@ export function AdminPage() {
           ? draft.data.title
           : typeof draft.data.name === "string"
             ? draft.data.name
-            : draft.slug;
-    const nextSlug = slugify(String(sourceValue));
+            : null;
+    const nextSlug = slugify(String(sourceValue ?? ""));
 
     if (!nextSlug) {
       toast.error("Add a title or name before generating a slug");
@@ -196,8 +189,7 @@ export function AdminPage() {
 
     setDraft((current) => {
       if (!current) return current;
-      const nextData = field ? { ...current.data, [field.name]: nextSlug } : current.data;
-      return { ...current, slug: nextSlug, data: nextData };
+      return { ...current, data: { ...current.data, [field.name]: nextSlug } };
     });
   }
 
@@ -213,11 +205,9 @@ export function AdminPage() {
 
     try {
       const data = jsonMode ? JSON.parse(jsonText) : { ...draft.data };
-      if (slugField) data[slugField.name] = draft.slug;
 
       const body = {
         type: selectedDef.name,
-        slug: draft.slug || null,
         status: statusOverride ?? draft.status,
         data,
       };
@@ -227,7 +217,7 @@ export function AdminPage() {
         : await api.send<Document>("/api/documents", "POST", body);
 
       setSelectedId(saved.id);
-      setDraft(draftFromDocument(saved, selectedDef));
+      setDraft(draftFromDocument(saved));
       navigate(documentPath(saved.type, saved.id), { replace: true });
       setDocuments((current) => {
         const exists = current.some((doc) => doc.id === saved.id);
@@ -253,9 +243,7 @@ export function AdminPage() {
       const next = remaining[0];
       setDocuments(remaining);
       setSelectedId(next?.id ?? null);
-      setDraft(
-        next ? draftFromDocument(next, selectedDef) : selectedDef ? newDraft(selectedDef) : null,
-      );
+      setDraft(next ? draftFromDocument(next) : selectedDef ? newDraft(selectedDef) : null);
       navigate(documentPath(selectedType, next?.id ?? null), { replace: true });
       toast.success("Deleted");
     } catch (err) {
@@ -359,7 +347,7 @@ export function AdminPage() {
                       {titleFor(doc, selectedDef)}
                     </span>
                     <span className="mt-1 flex items-center justify-between gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <span className="truncate">{doc.slug || "No slug"}</span>
+                      <span className="truncate">{formatDate(doc.created_at)}</span>
                       <StatusPill status={doc.status} />
                     </span>
                   </a>
@@ -407,18 +395,6 @@ export function AdminPage() {
           <div className="mx-auto max-w-3xl">
             {draft && selectedDef ? (
               <div className="space-y-5">
-                {slugField ? null : (
-                  <section className="grid gap-4">
-                    <FieldShell label="Slug">
-                      <SlugInput
-                        onChange={(value) => setDraft({ ...draft, slug: value })}
-                        onGenerate={() => generateSlug()}
-                        value={draft.slug}
-                      />
-                    </FieldShell>
-                  </section>
-                )}
-
                 {jsonMode ? (
                   <FieldShell label="Raw data">
                     <textarea
@@ -430,7 +406,6 @@ export function AdminPage() {
                   </FieldShell>
                 ) : (
                   selectedDef.fields.map((field) => {
-                    const value = field.type === "slug" ? draft.slug : draft.data[field.name];
                     return (
                       <FieldEditor
                         field={field}
@@ -440,7 +415,7 @@ export function AdminPage() {
                         }
                         onChange={(nextValue) => updateField(field, nextValue)}
                         schema={schema}
-                        value={value}
+                        value={draft.data[field.name]}
                       />
                     );
                   })

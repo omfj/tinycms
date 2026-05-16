@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO users (email, name, status, role)\n         VALUES ($1, $2, $3, $4)\n         ON CONFLICT (email) DO UPDATE SET name = COALESCE(EXCLUDED.name, users.name)\n         RETURNING id",
+  "query": "INSERT INTO users (email, name, status, role)\n         VALUES ($1, $2, $3, $4)\n         RETURNING id",
   "describe": {
     "columns": [
       {
@@ -21,5 +21,5 @@
       false
     ]
   },
-  "hash": "928f46838d31629166a17df572336a478b385090e1aca5a9264c2013c720fde9"
+  "hash": "3c2834d260b155d07fe52a9164a193e166c404bebd8eade971cd5e34c26af55c"
 }

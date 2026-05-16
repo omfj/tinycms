@@ -122,7 +122,6 @@ export type Status = "draft" | "published" | "archived";
 export type Document = {
   id: string;
   type: string;
-  slug: string | null;
   status: Status | string;
   data: Record<string, unknown>;
   created_at: string;
@@ -131,7 +130,6 @@ export type Document = {
 };
 
 export type Draft = {
-  slug: string;
   status: Status;
   data: Record<string, unknown>;
 };

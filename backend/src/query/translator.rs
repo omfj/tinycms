@@ -12,7 +12,6 @@ use super::validator::ValidatedQuery;
 const DOCUMENT_COLUMNS: &[&str] = &[
     "id",
     "type",
-    "slug",
     "status",
     "data",
     "created_at",
