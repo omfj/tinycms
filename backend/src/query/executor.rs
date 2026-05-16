@@ -31,9 +31,27 @@ fn row_to_value(row: &sqlx::postgres::PgRow) -> Result<Value, QueryError> {
         let name = col.name().to_string();
         let type_name = col.type_info().name();
         let val = pg_col_to_json(row, col.ordinal(), type_name)?;
-        map.insert(name, val);
+        insert_nested(&mut map, &name, val);
     }
     Ok(Value::Object(map))
+}
+
+fn insert_nested(map: &mut Map<String, Value>, key: &str, val: Value) {
+    let mut parts = key.splitn(2, "__");
+    let head = parts.next().unwrap();
+    match parts.next() {
+        None => {
+            map.insert(head.to_string(), val);
+        }
+        Some(rest) => {
+            let child = map
+                .entry(head.to_string())
+                .or_insert_with(|| Value::Object(Map::new()));
+            if let Value::Object(child_map) = child {
+                insert_nested(child_map, rest, val);
+            }
+        }
+    }
 }
 
 fn pg_col_to_json(

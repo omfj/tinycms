@@ -16,8 +16,8 @@ async function main() {
 
   const posts = await client.query(
     `SELECT
-      p.id, p.title, p.slug,
-      p.body, a.name as author_name
+      p.id, p.title, p.slug, p.body,
+      a.name as author__name, a.id as author__id
     FROM post p
     LEFT JOIN author a ON p.author::uuid = a.id
     ORDER BY p.created_at DESC`,
