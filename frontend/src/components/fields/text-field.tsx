@@ -23,7 +23,7 @@ export function TextFieldEditor({
         placeholder={field.placeholder}
         required={field.required}
         style={style}
-        value={value}
+        value={value ?? ""}
       />
     );
   }
@@ -37,7 +37,7 @@ export function TextFieldEditor({
       placeholder={field.placeholder}
       required={field.required}
       type={field.type === "url" ? "url" : "text"}
-      value={value}
+      value={value ?? ""}
     />
   );
 }

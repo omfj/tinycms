@@ -19,7 +19,7 @@ export function DateFieldEditor({
       onChange={(event) => onChange(event.target.value)}
       required={field.required}
       type="datetime-local"
-      value={value}
+      value={value ?? ""}
     />
   );
 }

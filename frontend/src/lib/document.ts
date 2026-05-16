@@ -25,6 +25,5 @@ export function titleFor(doc: Document, type?: TypeDef) {
 
 function initialValue(field: Field): unknown {
   if (field.type === "boolean") return false;
-  if (field.type === "number") return "";
-  return "";
+  return null;
 }
