@@ -39,10 +39,11 @@ async fn providers(State(state): State<SharedState>) -> Json<serde_json::Value> 
     use crate::auth::provider::{
         credentials_enabled, github::find_github_config, google::find_google_config,
     };
+    let schema = state.schema.borrow();
     Json(json!({
-        "credentials": credentials_enabled(&state.schema),
-        "github": find_github_config(&state.schema).is_some(),
-        "google": find_google_config(&state.schema).is_some(),
+        "credentials": credentials_enabled(&schema),
+        "github": find_github_config(&schema).is_some(),
+        "google": find_google_config(&schema).is_some(),
     }))
 }
 

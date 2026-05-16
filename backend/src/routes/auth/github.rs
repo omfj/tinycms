@@ -15,7 +15,7 @@ pub async fn redirect(
     State(state): State<SharedState>,
     jar: CookieJar,
 ) -> Result<impl IntoResponse, crate::error::Error> {
-    let (client_id, _) = gh::find_github_config(&state.schema)
+    let (client_id, _) = gh::find_github_config(&state.schema.borrow())
         .ok_or_else(|| crate::error::Error::BadRequest("GitHub provider not configured".into()))?;
 
     let csrf = generate_token();
@@ -48,7 +48,7 @@ pub async fn callback(
     let Some(code) = params.code else {
         return (jar, Redirect::to("/?error=no_code")).into_response();
     };
-    let Some((client_id, client_secret)) = gh::find_github_config(&state.schema) else {
+    let Some((client_id, client_secret)) = gh::find_github_config(&state.schema.borrow()) else {
         return (jar, Redirect::to("/?error=not_configured")).into_response();
     };
 

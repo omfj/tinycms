@@ -8,6 +8,42 @@ loadEnv({
   override: true,
 });
 
+const authors = defineType({
+  name: "author",
+  fields: [
+    defineField({ name: "name", type: "string", required: true }),
+    defineField({ name: "bio", type: "text" }),
+    defineField({ name: "avatar", type: "image" }),
+    defineField({ name: "email", type: "string" }),
+    defineField({ name: "url", type: "url" }),
+  ],
+});
+
+const categories = defineType({
+  name: "category",
+  fields: [
+    defineField({ name: "name", type: "string", required: true }),
+    defineField({ name: "slug", type: "slug", source: "name" }),
+    defineField({ name: "description", type: "text" }),
+  ],
+});
+
+const posts = defineType({
+  name: "post",
+  fields: [
+    defineField({ name: "title", type: "string", required: true }),
+    defineField({ name: "slug", type: "slug", source: "title" }),
+    defineField({ name: "excerpt", type: "text" }),
+    defineField({ name: "body", type: "richtext", required: true }),
+    defineField({ name: "cover_image", type: "image" }),
+    defineField({ name: "author", type: "reference", to: [authors.name] }),
+    defineField({ name: "category", type: "reference", to: [categories.name] }),
+    defineField({ name: "published_at", type: "date" }),
+    defineField({ name: "seo_title", type: "string" }),
+    defineField({ name: "seo_description", type: "text" }),
+  ],
+});
+
 export default defineConfig({
   database: {
     type: "postgres",
@@ -21,6 +57,9 @@ export default defineConfig({
         clientId: process.env.GITHUB_CLIENT_ID!,
         clientSecret: process.env.GITHUB_CLIENT_SECRET!,
       },
+      {
+        provider: "credentials",
+      },
     ],
   },
 
@@ -32,41 +71,5 @@ export default defineConfig({
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
   },
 
-  types: [
-    defineType({
-      name: "post",
-      fields: [
-        defineField({ name: "title", type: "string", required: true }),
-        defineField({ name: "slug", type: "slug", source: "title" }),
-        defineField({ name: "excerpt", type: "text" }),
-        defineField({ name: "body", type: "richtext", required: true }),
-        defineField({ name: "cover_image", type: "image" }),
-        defineField({ name: "author", type: "reference", to: ["author"] }),
-        defineField({ name: "category", type: "reference", to: ["category"] }),
-        defineField({ name: "published_at", type: "date" }),
-        defineField({ name: "seo_title", type: "string" }),
-        defineField({ name: "seo_description", type: "text" }),
-      ],
-    }),
-
-    defineType({
-      name: "author",
-      fields: [
-        defineField({ name: "name", type: "string", required: true }),
-        defineField({ name: "bio", type: "text" }),
-        defineField({ name: "avatar", type: "image" }),
-        defineField({ name: "email", type: "string" }),
-        defineField({ name: "url", type: "url" }),
-      ],
-    }),
-
-    defineType({
-      name: "category",
-      fields: [
-        defineField({ name: "name", type: "string", required: true }),
-        defineField({ name: "slug", type: "slug", source: "name" }),
-        defineField({ name: "description", type: "text" }),
-      ],
-    }),
-  ],
+  types: [posts, authors, categories],
 });

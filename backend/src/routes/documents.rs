@@ -89,7 +89,7 @@ async fn create(
     Json(body): Json<CreateDocument>,
 ) -> Result<Json<Document>> {
     let data = body.data.unwrap_or_else(|| json!({}));
-    validate_doc(&state.schema, &body.doc_type, &data)?;
+    validate_doc(&state.schema.borrow(), &body.doc_type, &data)?;
 
     let doc = sqlx::query_as!(
         Document,
@@ -118,7 +118,7 @@ async fn update(
             .fetch_optional(&state.pool)
             .await?
             .ok_or(Error::NotFound)?;
-        validate_doc(&state.schema, &row.r#type, data)?;
+        validate_doc(&state.schema.borrow(), &row.r#type, data)?;
     }
 
     let doc = sqlx::query_as!(

@@ -7,6 +7,7 @@ use crate::config::Config;
 use crate::schema::{
     AuthConfig, DatabaseConfig, FieldDef, ProviderConfig, StorageConfig, TinyCmsConfig, TypeDef,
 };
+use crate::serve;
 
 #[derive(Parser)]
 #[command(name = "tinycms", about = "Self-hosted headless CMS")]
@@ -22,9 +23,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// Start the CMS server
-    Serve,
-    /// Start the CMS server with live config reloading
-    Dev,
+    Serve {
+        /// Reload config automatically when tinycms.config.ts changes
+        #[arg(long)]
+        watch: bool,
+    },
     /// Display the parsed config from tinycms.config.ts
     Config {
         /// Show secret values instead of redacting them
@@ -48,8 +51,8 @@ pub async fn run() -> anyhow::Result<()> {
     let cfg = Config::from_env()?;
 
     match cli.command {
-        Command::Serve | Command::Dev => {
-            crate::serve(cfg).await?;
+        Command::Serve { watch } => {
+            serve(cfg, watch).await?;
         }
         Command::Config { show_secrets } => {
             show_config(&cfg.config_path, show_secrets).await?;

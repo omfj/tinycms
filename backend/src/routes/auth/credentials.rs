@@ -28,7 +28,7 @@ pub async fn login(
     jar: CookieJar,
     Json(body): Json<LoginRequest>,
 ) -> Result<Response> {
-    if !credentials_enabled(&state.schema) {
+    if !credentials_enabled(&state.schema.borrow()) {
         return Err(Error::BadRequest(
             "credentials provider not configured".into(),
         ));
@@ -88,7 +88,7 @@ pub async fn register(
     jar: CookieJar,
     Json(body): Json<RegisterRequest>,
 ) -> Result<Response> {
-    if !credentials_enabled(&state.schema) {
+    if !credentials_enabled(&state.schema.borrow()) {
         return Err(Error::BadRequest(
             "credentials provider not configured".into(),
         ));

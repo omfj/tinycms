@@ -11,7 +11,7 @@ pub struct AdminSchema {
 
 pub async fn get(State(state): State<SharedState>) -> Result<Json<AdminSchema>> {
     Ok(Json(AdminSchema {
-        types: state.schema.types.clone(),
+        types: state.schema.borrow().types.clone(),
         storage_configured: state.storage.is_some(),
     }))
 }
