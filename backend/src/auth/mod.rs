@@ -1,5 +1,5 @@
 use axum::{extract::FromRequestParts, http::request::Parts};
-use chrono::{DateTime, Utc};
+use axum_extra::extract::cookie::CookieJar;
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -9,11 +9,10 @@ use crate::{
     state::SharedState,
 };
 
-pub fn hash_token(token: &str) -> String {
-    use sha2::{Digest, Sha256};
-    let result = Sha256::digest(token.as_bytes());
-    result.iter().map(|b| format!("{b:02x}")).collect()
-}
+pub mod provider;
+mod token;
+
+pub use token::{generate_token, hash_token};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AuthUser {
@@ -24,7 +23,6 @@ pub struct AuthUser {
     pub status: UserStatus,
 }
 
-/// Extractor that requires admin role.
 #[derive(Debug, Clone)]
 pub struct AdminUser(#[allow(dead_code)] pub AuthUser);
 
@@ -37,37 +35,6 @@ struct SessionRow {
     status: UserStatus,
 }
 
-pub fn generate_token() -> String {
-    use rand::RngCore;
-    let mut bytes = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut bytes);
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-pub fn session_cookie(token: &str, expires: DateTime<Utc>) -> String {
-    format!(
-        "session={token}; Path=/; HttpOnly; SameSite=Lax; Expires={}",
-        expires.format("%a, %d %b %Y %H:%M:%S GMT")
-    )
-}
-
-pub fn clear_session_cookie() -> &'static str {
-    "session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
-}
-
-/// Extracts a named cookie value from the Cookie header.
-pub fn extract_cookie(headers: &axum::http::HeaderMap, name: &str) -> Option<String> {
-    headers
-        .get("cookie")?
-        .to_str()
-        .ok()?
-        .split(';')
-        .find_map(|part| {
-            let part = part.trim();
-            part.strip_prefix(&format!("{name}=")).map(str::to_string)
-        })
-}
-
 impl FromRequestParts<SharedState> for AuthUser {
     type Rejection = Error;
 
@@ -75,8 +42,8 @@ impl FromRequestParts<SharedState> for AuthUser {
         parts: &mut Parts,
         state: &SharedState,
     ) -> Result<Self, Self::Rejection> {
-        // Try session cookie first
-        if let Some(token) = extract_cookie(&parts.headers, "session")
+        let jar = CookieJar::from_request_parts(parts, state).await.unwrap();
+        if let Some(token) = jar.get("session").map(|c| c.value().to_owned())
             && let Some(row) = sqlx::query_as!(
                 SessionRow,
                 r#"SELECT u.id, u.email, u.name,

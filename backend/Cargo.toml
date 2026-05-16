@@ -8,6 +8,8 @@ anyhow = "1"
 aws-config = "1.8.16"
 aws-sdk-s3 = "1.132.0"
 axum = { version = "0.8.9", features = ["multipart"] }
+axum-extra = { version = "0.10", features = ["cookie"] }
+time = "0.3"
 clap = { version = "4", features = ["derive"] }
 colored    = "3.1.1"
 mime_guess = "2.0.5"
