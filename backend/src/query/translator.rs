@@ -476,14 +476,6 @@ mod tests {
         translate(v, vec![], &[])
     }
 
-    // helper that simulates a schema with a single type
-    fn run_with_types(sql: &str, types: &[TypeDef]) -> Result<Translated, QueryError> {
-        let type_names: Vec<&str> = types.iter().map(|t| t.name.as_str()).collect();
-        let q = parser::parse(sql)?;
-        let v = validator::validate(q, &UserRole::Admin, &type_names)?;
-        translate(v, vec![], types)
-    }
-
     #[test]
     fn simple_select() {
         let t = run("SELECT id, status FROM documents WHERE status = 'published'").unwrap();
