@@ -1,5 +1,3 @@
-import { classNames } from "../lib/format";
-
 export function SidebarHeader({
   collapsed,
   label,
@@ -23,7 +21,6 @@ export function SidebarHeader({
     </div>
   );
 }
-
 
 export function CollapsedRail({ label }: { label: string }) {
   return (

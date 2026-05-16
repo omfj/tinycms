@@ -104,7 +104,8 @@ export function SettingsPage() {
     try {
       const res = await api.send<ApiToken & { raw_token: string }>("/api/tokens", "POST", {
         name: newTokenName.trim(),
-        expires_at: newTokenHasExpiry && newTokenExpiry ? new Date(newTokenExpiry).toISOString() : null,
+        expires_at:
+          newTokenHasExpiry && newTokenExpiry ? new Date(newTokenExpiry).toISOString() : null,
       });
       const { raw_token, ...token } = res;
       setTokens((prev) => [token, ...prev]);
@@ -164,7 +165,9 @@ export function SettingsPage() {
                     key={type.name}
                   >
                     <span>{displayType(type.name)}</span>
-                    <span className="text-zinc-500 dark:text-zinc-400">{type.fields.length} fields</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">
+                      {type.fields.length} fields
+                    </span>
                   </div>
                 ))}
               </div>
@@ -403,7 +406,7 @@ export function SettingsPage() {
                             onClick={() => void updateUser(u.id, { status: "suspended" })}
                             type="button"
                           >
-                            Suspend
+                            Remove
                           </button>
                         ) : null}
                       </div>

@@ -64,12 +64,7 @@ export function TopNav({
           {darkTheme ? <Sun aria-hidden="true" size={16} /> : <Moon aria-hidden="true" size={16} />}
           <span className="sr-only">{darkTheme ? "Use light theme" : "Use dark theme"}</span>
         </button>
-        <button
-          className={iconClass}
-          onClick={() => void logout()}
-          title="Sign out"
-          type="button"
-        >
+        <button className={iconClass} onClick={() => void logout()} title="Sign out" type="button">
           <LogOut aria-hidden="true" size={16} />
           <span className="sr-only">Sign out</span>
         </button>

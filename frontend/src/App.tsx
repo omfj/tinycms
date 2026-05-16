@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { Toaster } from "sonner";
 
 import { TopNav } from "./components/top-nav";

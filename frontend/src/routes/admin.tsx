@@ -272,12 +272,7 @@ export function AdminPage() {
   }
 
   return (
-    <main
-      className={classNames(
-        "grid h-full min-h-0",
-        gridClass,
-      )}
-    >
+    <main className={classNames("grid h-full min-h-0", gridClass)}>
       <aside className="flex min-h-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
         <SidebarHeader
           collapsed={typesCollapsed}
@@ -308,7 +303,6 @@ export function AdminPage() {
             </nav>
           )}
         </div>
-
       </aside>
 
       <aside className="min-h-0 border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
@@ -441,7 +435,9 @@ export function AdminPage() {
                       <FieldEditor
                         field={field}
                         key={field.name}
-                        onGenerateSlug={() => generateSlug(field.type === "slug" ? field : undefined)}
+                        onGenerateSlug={() =>
+                          generateSlug(field.type === "slug" ? field : undefined)
+                        }
                         onChange={(nextValue) => updateField(field, nextValue)}
                         schema={schema}
                         value={value}

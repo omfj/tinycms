@@ -1,19 +1,5 @@
 import { displayType } from "../lib/format";
-import type {
-  ArrayField,
-  BooleanField,
-  DateField,
-  Field,
-  ImageField,
-  NumberField,
-  ReferenceField,
-  RichtextField,
-  Schema,
-  SlugField,
-  StringField,
-  TextField,
-  UrlField,
-} from "../types";
+import type { Field, NumberField, Schema, StringField } from "../types";
 import { selectClass } from "./ui";
 import { FieldShell } from "./field-shell";
 import { ArrayFieldEditor } from "./fields/array-field";
@@ -59,8 +45,7 @@ export function FieldEditor({
     );
   }
 
-  const hasOptions =
-    (field.type === "string" || field.type === "number") && field.options != null;
+  const hasOptions = (field.type === "string" || field.type === "number") && field.options != null;
 
   if (hasOptions) {
     const opts = (field as StringField | NumberField).options!;

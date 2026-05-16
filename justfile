@@ -6,21 +6,13 @@ db:
 db-stop:
     docker compose down
 
-backend:
-    cd backend && cargo run
-
-frontend:
-    pnpm dev
-
 lint:
-    pnpm lint
+    cargo clippy --fix --allow-dirty --tests && pnpm lint:fix
 
 fmt:
-    pnpm fmt
+    cargo fmt && pnpm fmt
 
-# Build frontend only — cargo build runs this automatically via build.rs
-build-frontend:
-    pnpm install && pnpm build
+check: lint fmt
 
 # cargo build triggers build.rs which runs pnpm build automatically
 build:
